@@ -1,8 +1,17 @@
 <template>
-  <ion-select class="select" value="3" ok-text="Okay" cancel-text="Dismiss">
-    <ion-select-option value="1">Chapter 1</ion-select-option>
-    <ion-select-option value="2">Chapter 2</ion-select-option>
-    <ion-select-option value="3">Chapter 3</ion-select-option>
+  <ion-select 
+    v-if="chapters"
+    :value="chapters[0].url"
+    class="select" 
+    ok-text="Okay" 
+    cancel-text="Dismiss"
+    @ionChange="($event) => this.$emit('switch', $event.detail.value)"
+  >
+    <ion-select-option
+      v-for="chapter in chapters"
+      :key="chapter.name"
+      v-bind:value="chapter.url"
+    >Chapter: {{chapter.name}}</ion-select-option>
   </ion-select>
 </template>
 
@@ -14,6 +23,7 @@ export default {
     IonSelect, 
     IonSelectOption,
   },
+  props: ['chapters'],
 };
 </script>
 

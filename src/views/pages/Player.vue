@@ -1,36 +1,49 @@
 <template>
-  <ion-card class="container">
+  <ion-card class="container" v-if="audio">
     <div class="header">
-      <ChapterSelect />
+      <ChapterSelect
+        :chapters="playlist.chapters"
+        @switch="onChapterSwitch"
+      />
     </div>
     <div class="content">
       <div class="titles">
         <ion-text color="dark">
-          <h1 class="title">John Doe</h1>
+          <h1 class="title">{{book.author}}</h1>
         </ion-text>
         <ion-text class="subtitle" color="dark">
-          <p class="subtitle">The book</p>
+          <p class="subtitle">{{book.title}}</p>
         </ion-text>
       </div>
       <div class="controls">
-        <ion-button size="small">
+        <ion-button @click="skipTime(-20)" size="small">
           <ion-icon :icon="playBack"></ion-icon>
         </ion-button>
-        <ion-button size="large" class="play-btn">
-          <ion-icon :icon="play"></ion-icon>
+        <ion-button size="large" 
+          class="play-btn" 
+          :disabled="!audio"
+          @click="toggleAudio"
+        >
+          <ion-icon :icon="playingState ? pause : play"></ion-icon>
         </ion-button>
-        <ion-button size="small">
+        <ion-button @click="skipTime(20)" size="small">
           <ion-icon :icon="playForward"></ion-icon>
         </ion-button>
       </div>
-      <ion-progress-bar class="progress" value="0.5"></ion-progress-bar>
+      <ion-progress-bar 
+        @click="timelineGoTo" 
+        class="progress" 
+        :value="timelineLength"
+      ></ion-progress-bar>
       <ion-text color="dark">
-        <p class="title">00:23:00</p>
+        <p class="title">{{currentTime || '00:00:00'}}</p>
       </ion-text>
     </div>
     <div class="footer">
-      <ion-button>
-        <ion-icon :icon="volumeMute"></ion-icon>
+      <ion-button @click="toggleMute">
+        <ion-icon 
+          :icon="isMuted ? volumeHigh : volumeMute"
+        ></ion-icon>
       </ion-button>
     </div>
   </ion-card>
@@ -38,8 +51,11 @@
 
 <script>
 import { IonCard, IonText, IonProgressBar, IonButton, } from "@ionic/vue";
-import { play, playBack, playForward, volumeMute, } from "ionicons/icons";
+import { play, playBack, playForward, volumeMute, pause, volumeHigh } from "ionicons/icons";
+
 import ChapterSelect from "../../components/ChapterSelect.vue";
+
+import {getTimeCodeFromNum} from '@/services/TimeService';
 
 export default {
   components: {
@@ -55,14 +71,109 @@ export default {
       playBack,
       playForward,
       volumeMute,
+      pause,
+      volumeHigh,
     }
-  }
+  },
+  data() {
+    return {
+      book: {},
+      playlist: {},
+      audio: null,
+      playingState: false,
+      isMuted: false,
+      timelineLength: 0,
+      interval: {},
+      currentTime: 0,
+    }
+  },
+  methods: {
+    toggleAudio() {
+      if(this.playingState) {
+        this.stop();
+      }else {
+        this.start();
+      }
+    },
+    stop() {
+      this.audio.pause();
+      this.playingState = false;
+    },
+    start() {
+      this.audio.play();
+      this.playingState = true;
+    },
+    timelineGoTo(e) {
+      const timelineWidth = window.getComputedStyle(e.currentTarget).width;
+      const timeToSeek = e.offsetX / parseInt(timelineWidth) * this.audio.duration;
+
+      this.audio.currentTime = timeToSeek;
+    },
+    toggleMute() {
+      if(this.isMuted) {
+        this.audio.muted = false;
+      }else {
+        this.audio.muted = true;
+      }
+
+      this.isMuted = !this.isMuted;
+    },
+    skipTime(timeToSkip) {
+      if(this.audio.currentTime < this.audio.duration - 20) {
+        this.audio.currentTime = this.audio.currentTime + timeToSkip;
+      }
+    },
+    onChapterSwitch(src) {
+      this.stop();
+      this.interval = null;
+      this.audio.src = src;
+
+      this.audio.addEventListener('loadeddata', () => {
+        this.interval = setInterval(
+          () => {
+            this.currentTime = getTimeCodeFromNum(this.audio.currentTime);
+            this.timelineLength = this.audio.currentTime / this.audio.duration;
+          }, 500
+        );
+
+        this.audio.addEventListener("ended", () => {
+          this.stop();
+        });
+      }, {once: true});
+    }
+  },
+  async created() {
+    const booksUrl = 'https://my-json-server.typicode.com/yehor-akunishnikov/MOCK-DB/books';
+    const playlistUrl = 'https://my-json-server.typicode.com/yehor-akunishnikov/MOCK-DB/playlists';
+    const bookId = this.$route.params.bookId;
+
+    this.book = await fetch(`${booksUrl}/${bookId}`)
+      .then(data => data.json());
+    this.playlist = await fetch(`${playlistUrl}/${this.book.playlistId}`)
+      .then(data => data.json());
+
+    this.audio = new Audio(this.playlist.chapters[0].url);
+
+    this.audio.addEventListener('loadeddata', () => {
+      this.interval = setInterval(
+        () => {
+          this.audio.volume = 1;
+          this.currentTime = getTimeCodeFromNum(this.audio.currentTime);
+          this.timelineLength = this.audio.currentTime / this.audio.duration;
+        }, 500
+      );
+
+      this.audio.addEventListener("ended", () => {
+        this.stop();
+      });
+    }, {once: true});
+  },
 };
 </script>
 
 <style scoped>
 .container {
-  height: calc(100% - 20px);
+  height: calc(100vh - 95px);
 
   display: flex;
   flex-direction: column;
@@ -100,7 +211,7 @@ export default {
 }
 
 .titles {
-  margin-bottom: 60px;
+  margin-bottom: 20px;
 }
 
 .controls {
@@ -115,6 +226,7 @@ export default {
   height: 20px;
 
   border-radius: 5px;
+  cursor: pointer;
 }
 
 .footer {

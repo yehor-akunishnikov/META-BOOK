@@ -1,32 +1,28 @@
 <template>
   <ion-card class="card">
     <div class="card-inner">
-      <ion-router-link href="player">
+      <ion-router-link :href="`player/${book.id}`">
         <ion-card-header class="header">
           <img
             class="image"
-            src="https://akniga.org/uploads/media/topic/2021/11/02/12/preview/fade1b6f4e05a4099310_252x350crop.jpg"
+            :src="book.image"
           />
         </ion-card-header>
       </ion-router-link>
 
       <ion-card-content class="content">
         <ion-card-title class="title"
-          >Келли Джеймс Патрик - Крошка-мошка-паучок</ion-card-title
+          >{{book.author}}</ion-card-title
         >
         <ion-text color="dark">
-          <p class="description">
-            Престарелый актёр живет в ретропригороде — имитации старинного
-            города, и с ним живёт андроид — имитация его маленькой дочери.
-            Однажды к ним приезжает его настоящая, взрослая дочь…
-          </p>
+          <p class="description">{{book.description}}</p>
         </ion-text>
       </ion-card-content>
     </div>
     <div class="footer">
       <div class="footer-inner">
         <ion-icon class="footer-icon" :icon="mic"></ion-icon>
-        <span class="footer-text">Головин Кирилл</span>
+        <span class="footer-text">{{book.announcer}}</span>
       </div>
     </div>
   </ion-card>
@@ -58,6 +54,7 @@ export default {
       mic,
     };
   },
+  props:['book'],
 };
 </script>
 

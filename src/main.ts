@@ -23,15 +23,6 @@ import '@ionic/vue/css/display.css';
 /* Theme variables */
 import './theme/variables.css';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBvMOeeOkAQX040Iyj65esSvFrfFAgTMaQ",
-  authDomain: "booksapp-842ac.firebaseapp.com",
-  projectId: "booksapp-842ac",
-  storageBucket: "booksapp-842ac.appspot.com",
-  messagingSenderId: "200905409617",
-  appId: "1:200905409617:web:0075d2d3fe845370fe6470"
-};
-
 const app = createApp(App)
   .use(IonicVue)
   .use(router);
